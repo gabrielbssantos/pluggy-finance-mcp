@@ -16,16 +16,15 @@ Verificações executadas em 2026-09-14, sem credenciais ou dados financeiros re
 | Ambiente Python/SDK do Hermes 0.21.2 | descoberta das 18 tools e chamadas sintéticas aprovadas |
 | Configuração real do perfil Hermes | não alterada |
 | Consultas financeiras reais | não executadas; dependem das credenciais e do Item autorizado |
-| Docker build, scan e smoke do container | preparados no CI, não executados localmente: daemon Docker inativo |
-| Cloud Run / Secret Manager / publicação | templates entregues; nenhum recurso criado ou deploy realizado |
+| Docker build, scan e smoke do container | aprovados no GitHub Actions; daemon Docker local inativo |
+| Cloud Run / Secret Manager | templates entregues; nenhum recurso criado ou deploy realizado |
 
 O teste do ambiente Hermes usa o cliente MCP instalado no mesmo Python do Hermes e inicia
 um subprocesso de teste deste projeto. Não substitui uma conversa real com o agente depois de
 configurar as credenciais. O funcionamento local do MCP não depende de Docker.
 
 Para reproduzir: `make check`, `make audit`, `make openapi-check` e, opcionalmente com Docker
-ativo, `make container container-smoke`. Os jobs GitHub Actions só executarão quando o projeto
-for publicado em um repositório com Actions habilitado.
+ativo, `make container container-smoke`. O container continua opcional para uso local.
 
 ## Revisão para publicação pública
 
@@ -34,4 +33,22 @@ for publicado em um repositório com Actions habilitado.
 - `GET /items/{id}/resources` e seus três schemas: classificados fora do escopo.
 - `PaymentIntentStatus.PAYMENT_TIMEOUT`: alteração revisada no domínio de pagamentos excluído.
 - As 12 operações GET autorizadas e as 18 tools mantêm seus contratos públicos.
-- Gitleaks no CI verifica todo o histórico, sem exceções adicionais; nenhum dado real é usado.
+- Gitleaks 8.30.1: nenhum segredo detectado nos 55 arquivos selecionados, no commit inicial
+  antes do push e no histórico publicado. Não há exceções adicionais.
+- Autor e committer usam `gabrielbssantos` e o e-mail GitHub `noreply` configurado só neste repo.
+- `.env`, ambientes virtuais, caches, logs e artefatos de build permanecem ignorados.
+
+## Evidência do CI público
+
+[Execução aprovada após a correção da imagem base](https://github.com/gabrielbssantos/pluggy-finance-mcp/actions/runs/34860537598),
+commit `9bac23b4baddb12e1efbd2af789f188cef4e02a7`: Python 3.12 e 3.13, contrato remoto,
+scanner de segredos e container aprovados.
+
+O primeiro scan identificou 12 vulnerabilidades HIGH/CRITICAL com correção disponível em
+pacotes Debian da imagem base. O Dockerfile aplica as atualizações disponíveis antes dos
+estágios de build e execução; a nova imagem passou pelo mesmo scan e smoke HTTP.
+O Trivy bloqueia HIGH/CRITICAL com correção disponível; a aprovação não implica ausência de
+vulnerabilidades de outras severidades ou ainda sem correção. As dependências Python de
+produção e desenvolvimento também passaram pelo `pip-audit` local.
+
+[Histórico completo das execuções](https://github.com/gabrielbssantos/pluggy-finance-mcp/actions/workflows/ci.yml).

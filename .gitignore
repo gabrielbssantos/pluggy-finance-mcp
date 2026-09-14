@@ -15,3 +15,7 @@ coverage.xml
 htmlcov/
 dist/
 artifacts/
+build/
+*.egg-info/
+.cache/
+drift-report.txt
