@@ -1,0 +1,60 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install checksum-pinned Gitleaks 8.30.1
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --output /tmp/gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum --check
+          mkdir -p /tmp/pluggy-gitleaks
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp/pluggy-gitleaks gitleaks
+      - name: Scan complete Git history
+        run: /tmp/pluggy-gitleaks/gitleaks git --redact --no-banner --log-opts=--all .
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.13'
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: make check
+      - run: make audit
+  api-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.13'
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - run: uv run python scripts/check_openapi_drift.py --remote
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t pluggy-finance-mcp:ci .
+      - run: bash scripts/smoke_container.sh pluggy-finance-mcp:ci
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: pluggy-finance-mcp:ci
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true

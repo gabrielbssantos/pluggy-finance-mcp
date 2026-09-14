@@ -1,0 +1,60 @@
+# Template only. Replace project, service account, image digest and actual host before deploying.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pluggy-finance-mcp
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '2'
+        run.googleapis.com/cpu-throttling: 'true'
+    spec:
+      serviceAccountName: pluggy-finance-mcp@PROJECT_ID.iam.gserviceaccount.com
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/pluggy-finance-mcp@sha256:IMAGE_DIGEST
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          env:
+            - name: MCP_TRANSPORT
+              value: streamable-http
+            - name: MCP_AUTH_MODE
+              value: bearer
+            - name: MCP_ALLOWED_HOSTS
+              value: ACTUAL_SERVICE_HOST.run.app
+            - name: PLUGGY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: pluggy-client-id
+                  key: '1'
+            - name: PLUGGY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pluggy-client-secret
+                  key: '1'
+            - name: PLUGGY_ITEM_ID
+              valueFrom:
+                secretKeyRef:
+                  name: pluggy-item-id
+                  key: '1'
+            - name: MCP_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pluggy-mcp-bearer-token
+                  key: '1'
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 30

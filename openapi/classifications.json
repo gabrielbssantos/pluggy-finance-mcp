@@ -1,0 +1,346 @@
+{
+  "DELETE /categories/rules/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "DELETE /items/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "DELETE /payments/customers/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "DELETE /payments/recipients/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "DELETE /payments/requests/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "DELETE /webhooks/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "GET /accounts": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /accounts/{id}": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /accounts/{id}/balance": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /accounts/{id}/statements": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /bills": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /bills/{id}": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /boletos/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /categories": {
+    "risk": "R0",
+    "scope": "excluded"
+  },
+  "GET /categories/rules": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "GET /categories/{id}": {
+    "risk": "R0",
+    "scope": "excluded"
+  },
+  "GET /connectors": {
+    "risk": "R0",
+    "scope": "excluded"
+  },
+  "GET /connectors/{id}": {
+    "risk": "R0",
+    "scope": "excluded"
+  },
+  "GET /consents": {
+    "risk": "R2",
+    "scope": "excluded"
+  },
+  "GET /consents/{id}": {
+    "risk": "R2",
+    "scope": "excluded"
+  },
+  "GET /identity": {
+    "risk": "R2",
+    "scope": "optional"
+  },
+  "GET /identity/{id}": {
+    "risk": "R2",
+    "scope": "optional"
+  },
+  "GET /investments": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /investments/{id}": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /investments/{id}/transactions": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /items/{id}": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /items/{id}/resources": {
+    "risk": "R1",
+    "scope": "excluded"
+  },
+  "GET /items/{id}/scr": {
+    "risk": "R2",
+    "scope": "excluded"
+  },
+  "GET /loans": {
+    "risk": "R1",
+    "scope": "excluded"
+  },
+  "GET /loans/{id}": {
+    "risk": "R1",
+    "scope": "excluded"
+  },
+  "GET /merchants": {
+    "risk": "R0",
+    "scope": "excluded"
+  },
+  "GET /payments/customers": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/customers/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/intents": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/intents/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/recipients": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/recipients/institutions": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/recipients/institutions/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/recipients/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/requests": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/requests/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/requests/{id}/automatic-pix/schedules": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/requests/{id}/schedules": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /payments/requests/{requestId}/automatic-pix/schedules/{paymentId}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /smart-transfers/payments/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /smart-transfers/preauthorizations": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /smart-transfers/preauthorizations/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /smart-transfers/preauthorizations/{id}/payments": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "GET /transactions": {
+    "risk": "R1",
+    "scope": "excluded"
+  },
+  "GET /transactions/{id}": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /v2/items": {
+    "risk": "R2",
+    "scope": "excluded"
+  },
+  "GET /v2/transactions": {
+    "risk": "R1",
+    "scope": "enabled"
+  },
+  "GET /webhooks": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "GET /webhooks/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "PATCH /items/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "PATCH /items/{id}/disable-auto-sync": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "PATCH /payments/customers/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "PATCH /payments/recipients/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "PATCH /payments/requests/{id}": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "PATCH /transactions/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "PATCH /webhooks/{id}": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /auth": {
+    "risk": "R3",
+    "scope": "internal"
+  },
+  "POST /boleto-connections": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /boleto-connections/from-item": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /boletos": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /boletos/{id}/cancel": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /categories/rules": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /connect_token": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /connectors/{id}/validate": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /items": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /items/{id}/mfa": {
+    "risk": "R3",
+    "scope": "excluded"
+  },
+  "POST /payments/customers": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/intents": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/recipients": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/automatic-pix": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/pix-qr": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/automatic-pix/cancel": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/automatic-pix/schedule": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/automatic-pix/schedules/{scheduleId}/cancel": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/automatic-pix/schedules/{scheduleId}/retry": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/schedules/cancel": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /payments/requests/{id}/schedules/{scheduleId}/cancel": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /smart-transfers/payments": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /smart-transfers/preauthorizations": {
+    "risk": "R4",
+    "scope": "excluded"
+  },
+  "POST /webhooks": {
+    "risk": "R3",
+    "scope": "excluded"
+  }
+}

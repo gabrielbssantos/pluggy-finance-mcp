@@ -1,0 +1,38 @@
+name: OpenAPI drift
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.13'
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - name: Compare upstream
+        id: compare
+        continue-on-error: true
+        run: uv run python scripts/check_openapi_drift.py --remote > drift-report.txt 2>&1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi-drift-report
+          path: drift-report.txt
+      - name: Record blocking change
+        if: steps.compare.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number=$(gh issue list --state open --search 'in:title "Pluggy OpenAPI requires review"' --json number --jq '.[0].number // empty')
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --body-file drift-report.txt
+          else
+            gh issue create --title 'Pluggy OpenAPI requires review' --body-file drift-report.txt
+          fi
+          exit 1

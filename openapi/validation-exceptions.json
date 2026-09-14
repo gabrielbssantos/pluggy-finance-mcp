@@ -1,0 +1,8 @@
+[
+  {
+    "pointer": "/components/schemas/CreatePaymentRequest/properties/schedule",
+    "schema_sha256": "dfdbd10b185c55e6e61697d1cfee6279a204164ce255683f395ecbe83f0bc686",
+    "ignore_keyword": "default",
+    "reason": "Upstream payment recurrence declares default null incompatible with oneOf; outside MCP allowlist. Snapshot preserved."
+  }
+]
