@@ -1,5 +1,11 @@
 FROM ghcr.io/astral-sh/uv:0.12.13 AS uv
-FROM python:3.12-slim AS build
+FROM python:3.12-slim AS base
+# Apply available Debian security fixes before producing either stage.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM base AS build
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
@@ -8,7 +14,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
-FROM python:3.12-slim
+FROM base
 RUN useradd --uid 10001 --create-home app
 WORKDIR /app
 COPY --from=build --chown=10001:10001 /app/.venv /app/.venv
