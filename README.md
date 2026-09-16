@@ -1,8 +1,8 @@
 # Pluggy Finance MCP
 
-Servidor MCP pessoal em Python, **somente leitura e restrito a um único Item MeuPluggy**.
-Implementa 12 consultas básicas e 6 agregações financeiras, com isolamento de recursos,
-paginação explícita e proteção de credenciais.
+Servidor MCP pessoal em Python para múltiplas conexões Pluggy em uma única instância.
+Implementa consultas, agregações financeiras e sincronização explícita sob demanda,
+com isolamento por Item em cada chamada, paginação e proteção de credenciais.
 
 Implementação independente voltada a consultas financeiras pessoais no Hermes; não é um
 produto oficial da Pluggy. Existem também o [MCP da Pluggy](https://github.com/pluggyai/pluggy-mcp)
@@ -20,7 +20,7 @@ uv sync --frozen
 cp .env.example .env
 ```
 
-Preencha `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e `PLUGGY_ITEM_ID` em `.env`.
+Preencha apenas `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` em `.env`.
 A autorização inicial no MeuPluggy deve ter sido feita previamente. O servidor não cria Items.
 
 ```bash
@@ -33,6 +33,14 @@ Depois da instalação, `.venv/bin/python -m pluggy_finance_mcp` também funcion
 já exportadas. Veja a [configuração do Hermes](docs/OPERACAO_LOCAL.md).
 
 ## Tools
+
+Todas as 21 tools exigem `item_id` (UUID), além dos parâmetros abaixo.
+
+| Conexão e sincronização | Parâmetros adicionais |
+|---|---|
+| `get_item` | nenhum; valida existência e consulta estado/freshness |
+| `get_sync_status` | nenhum; consulta andamento, sem PATCH |
+| `sync_item` | `wait=true`, `timeout_seconds?` (1–3600) |
 
 | Consultas básicas | Parâmetros |
 |---|---|
@@ -58,7 +66,7 @@ já exportadas. Veja a [configuração do Hermes](docs/OPERACAO_LOCAL.md).
 | `get_investment_portfolio` | `investment_ids?` |
 | `get_net_worth` | `account_ids?`, `investment_ids?` |
 
-Nenhuma tool aceita `item_id`, credenciais, URL ou método HTTP. Identity não está implementada.
+Nenhuma tool aceita credenciais, URL ou método HTTP. Identity não está implementada.
 Datas de intervalo usam `YYYY-MM-DD`; mês usa `YYYY-MM`. O padrão das agregações de gastos é
 mês atual em `America/Sao_Paulo`, pelo lançamento de cada transação.
 
@@ -66,6 +74,76 @@ As respostas têm `ok`, `tool`, `data`, `pagination`, `meta`, `warnings` e `erro
 Totais calculados com Decimal são strings decimais; campos brutos mantêm seus nomes e valores
 numéricos JSON. Verifique `meta.complete` e `warnings` antes de interpretar uma agregação.
 As [regras de cálculo](docs/AGREGACOES.md) descrevem cobertura, ambiguidades e limites.
+
+## Pluggy authentication
+
+`PLUGGY_CLIENT_ID` + `PLUGGY_CLIENT_SECRET` → `POST /auth` → API Key temporária.
+O gerenciador compartilha a chave entre todas as conexões, somente em memória, e a renova
+15 minutos antes da expiração de duas horas. Um HTTP 401 permite uma renovação e repetição;
+um segundo 401 encerra a chamada. Não configure `PLUGGY_API_KEY` nem persista chaves em disco.
+
+## Item IDs
+
+Cada conexão tem seu próprio `itemId`. Forneça-o ao Hermes no primeiro uso e peça que guarde
+a associação, por exemplo `pluggy.itau_pessoal → <UUID>`. O Hermes pode validar com `get_item`.
+Nas próximas sessões ele resolve o nome na memória e fornece o UUID em cada chamada.
+Uma única instância e as mesmas credenciais atendem Itaú, Nubank, Inter e outras conexões.
+
+O MCP não lê nem escreve `MEMORY.md`, não mantém registry, banco local ou aliases, e não
+depende da memória do Hermes para funcionar. Não há Item em variável de ambiente.
+Migração: as antigas tools agora também exigem `item_id`; o vínculo de contas, transações
+e investimentos continua sendo validado contra o Item recebido naquela chamada.
+
+## Manual synchronization
+
+Consultas nunca chamam PATCH. “Quanto gastei hoje?” consulta os dados já disponíveis.
+“Atualize meu Itaú e veja quanto gastei hoje” exige `sync_item` antes da consulta.
+
+`sync_item(item_id, wait=true)` valida o Item, reutiliza as credenciais guardadas pela Pluggy
+com `PATCH /items/{id}` e corpo `{}`, e acompanha o estado por polling. Um Item já atualizando
+é acompanhado sem novo PATCH. `wait=false` retorna imediatamente após validação/envio.
+`get_sync_status(item_id)` e `get_item(item_id)` permitem verificar depois, incluindo `lastUpdatedAt`.
+
+Configurações opcionais: `PLUGGY_SYNC_POLL_INTERVAL_SECONDS=3` e
+`PLUGGY_SYNC_TIMEOUT_SECONDS=120`. O prazo inclui validação, envio, retries e polling.
+Timeout local com execução iniciada retorna `data.inProgress=true`; não significa falha do banco.
+Falha de rede após envio pode deixar o resultado incerto; consulte o status antes de reenviar.
+
+O envelope `ok=true` indica que a tool produziu um resultado, não que o banco sincronizou:
+verifique `data.success`, `data.inProgress`, `data.requiresUserAction` e `data.error`.
+Sucesso parcial é sinalizado por `partialSuccess=true`, sem afirmar atualização completa.
+MFA, login inválido e renovação de parâmetros exigem intervenção via Pluggy Connect;
+o MCP não pede senha ou token. `OUTDATED` pode ser atualizado mediante pedido explícito.
+
+Restrições de plano/frequência e connector offline preservam códigos específicos e mensagens
+seguras; não causam repetição de PATCH. HTTP 403 não é repetido. HTTP 429 respeita Retry-After
+com até duas repetições; se a espera exceder o limite HTTP, devolve o erro e a espera indicada.
+Mensagens livres da API não são expostas, pois podem conter credenciais. A frequência mínima
+é retornada quando existe em campo numérico estruturado; a próxima data só é calculada com
+timestamp e fuso conhecidos. Não se infere frequência de texto livre.
+
+Não há scheduler, cron, sync_all ou descoberta de Items. A Pluggy pode executar auto-sync
+por configuração própria; este MCP não altera essa configuração. Confira o
+[ciclo do Item](https://docs.pluggy.ai/docs/item-lifecycle) e as
+[restrições de atualização](https://docs.pluggy.ai/reference/items).
+
+## Example
+
+Primeiro uso: “Meu Itaú pessoal possui itemId <uuid>. Lembre disso.”
+Depois: “Verifique quando meu Itaú foi atualizado.” → memória Hermes → `get_item(item_id)`.
+Depois: “Atualize meu Itaú.” → memória Hermes → `sync_item(item_id)` → Pluggy.
+Para atualizar dois bancos, o Hermes chama `sync_item` individualmente, inicialmente em sequência.
+
+## Teste manual com uma conexão real
+
+1. Inicie o MCP por stdio e forneça ao Hermes um UUID real.
+2. Chame `get_item` e confira connector, status e `lastUpdatedAt`.
+3. Solicite uma única atualização com `sync_item`; se ainda estiver em andamento, use `get_sync_status`.
+4. Consulte `get_item` novamente e compare o timestamp. Consulte contas/transações normalmente.
+5. Em uma nova sessão Hermes, peça o estado pelo nome do banco e confirme que a memória resolve o UUID.
+
+Os testes automatizados não executam essas etapas com contas reais. Sem um Item real fornecido
+para teste, a validação de plano, instituição, MFA e memória entre sessões permanece manual.
 
 ## Validação e desenvolvimento
 

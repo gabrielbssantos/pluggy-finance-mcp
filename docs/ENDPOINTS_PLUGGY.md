@@ -61,7 +61,7 @@ SHA-256: `2a54e8f84f17b8e26739799bb73f32bb8d5d0a98ec3ae4c0ec977b8c55aef422`
 | `GET /v2/transactions` | `transactions-list-by-cursor` | R1 | enabled |
 | `GET /webhooks` | `webhooks-list` | R3 | excluded |
 | `GET /webhooks/{id}` | `webhooks-retrieve` | R3 | excluded |
-| `PATCH /items/{id}` | `items-update` | R3 | excluded |
+| `PATCH /items/{id}` | `items-update` | R3 | enabled |
 | `PATCH /items/{id}/disable-auto-sync` | `items-disable-autosync` | R3 | excluded |
 | `PATCH /payments/customers/{id}` | `payment-customer-update` | R4 | excluded |
 | `PATCH /payments/recipients/{id}` | `payment-recipient-update` | R4 | excluded |
@@ -94,6 +94,6 @@ SHA-256: `2a54e8f84f17b8e26739799bb73f32bb8d5d0a98ec3ae4c0ec977b8c55aef422`
 | `POST /smart-transfers/preauthorizations` | `smart-transfer-preauthorization-create` | R4 | excluded |
 | `POST /webhooks` | `webhooks-create` | R3 | excluded |
 
-`enabled`: allowlist de leitura; `optional`: Identity não implementada;
+`enabled`: consultas e sincronização explícita de Item; `optional`: Identity não implementada;
 `internal`: autenticação exclusivamente interna; `excluded`: fora do MCP.
 R0: pública; R1: financeira; R2: altamente sensível; R3: administrativa; R4: pagamentos.

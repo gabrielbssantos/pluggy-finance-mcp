@@ -1,5 +1,4 @@
 from typing import Literal, Self
-from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,7 +9,8 @@ class Settings(BaseSettings):
 
     pluggy_client_id: SecretStr
     pluggy_client_secret: SecretStr
-    pluggy_item_id: UUID
+    pluggy_sync_poll_interval_seconds: float = Field(default=3, gt=0, le=60)
+    pluggy_sync_timeout_seconds: int = Field(default=120, ge=1, le=3600)
     pluggy_base_url: Literal["https://api.pluggy.ai"] = "https://api.pluggy.ai"
     pluggy_api_key_refresh_margin_seconds: int = Field(default=900, ge=0, lt=7200)
     pluggy_http_timeout_seconds: float = Field(default=45, gt=0, le=45)

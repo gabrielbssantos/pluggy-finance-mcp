@@ -16,14 +16,13 @@ async def run(python: str, mock: bool) -> None:
     env = {
         "PLUGGY_CLIENT_ID": "synthetic-client",
         "PLUGGY_CLIENT_SECRET": "synthetic-secret",
-        "PLUGGY_ITEM_ID": "00000000-0000-0000-0000-000000000001",
         "MCP_TRANSPORT": "stdio",
     }
     async with stdio_client(StdioServerParameters(command=python, args=args, env=env)) as streams:
         async with ClientSession(*streams) as session:
             await session.initialize()
             tools = (await session.list_tools()).tools
-            assert len(tools) == 18
+            assert len(tools) == 21
             if mock:
                 # The calling interpreter (e.g. Hermes) does not need project's test dependencies.
                 cases = [
@@ -32,11 +31,13 @@ async def run(python: str, mock: bool) -> None:
                     ("get_net_worth", {}),
                 ]
                 for name, arguments in cases:
-                    result = await session.call_tool(name, arguments)
+                    result = await session.call_tool(
+                        name, {"item_id": "00000000-0000-0000-0000-000000000001", **arguments}
+                    )
                     payload = result.model_dump(by_alias=True)
                     assert not payload.get("isError", False)
                     assert payload["structuredContent"]["ok"]
-    print("MCP stdio: 18 tools discovered" + ("; synthetic calls passed" if mock else ""))
+    print("MCP stdio: 21 tools discovered" + ("; synthetic calls passed" if mock else ""))
 
 
 if __name__ == "__main__":

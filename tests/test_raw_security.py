@@ -13,6 +13,8 @@ from pluggy_finance_mcp.errors import FinanceError
 from pluggy_finance_mcp.server import Runtime, build_server, configure_logging
 
 CASES = [
+    ("get_item", {}),
+    ("get_sync_status", {}),
     ("get_connection_status", {}),
     ("list_accounts", {}),
     ("get_account", {"account_id": BANK}),
@@ -32,6 +34,7 @@ CASES = [
     ("get_investment_portfolio", {}),
     ("get_net_worth", {}),
 ]
+CASES = [(name, {"item_id": ITEM, **args}) for name, args in CASES]
 
 
 @pytest.mark.parametrize("tool,arguments", CASES)
@@ -87,7 +90,7 @@ async def test_foreign_account_and_descendants(client_api):
         "list_transactions",
         "list_account_statements",
     ]:
-        result = await runtime.invoke(tool, account_id=FOREIGN)
+        result = await runtime.invoke(tool, item_id=ITEM, account_id=FOREIGN)
         assert result.error["code"] == "NOT_FOUND"
         assert result.data is None
     assert not any(
@@ -99,9 +102,9 @@ async def test_foreign_transaction_and_bill(client_api):
     client, api = client_api
     api.transactions[BANK][0]["accountId"] = FOREIGN
     runtime = Runtime(client.settings, client)
-    result = await runtime.invoke("get_transaction", transaction_id=TRANSACTION)
+    result = await runtime.invoke("get_transaction", item_id=ITEM, transaction_id=TRANSACTION)
     assert result.error["code"] == "NOT_FOUND"
-    result = await runtime.invoke("get_credit_card_bill", bill_id=FOREIGN)
+    result = await runtime.invoke("get_credit_card_bill", item_id=ITEM, bill_id=FOREIGN)
     assert result.error["code"] == "NOT_FOUND"
     assert not any(r.url.path == f"/bills/{FOREIGN}" for r in api.requests)
 
@@ -109,7 +112,7 @@ async def test_foreign_transaction_and_bill(client_api):
 async def test_foreign_list_row_never_returned(client_api):
     client, api = client_api
     api.accounts[0]["itemId"] = FOREIGN
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "NOT_FOUND"
     assert result.data is None
 
@@ -131,7 +134,7 @@ async def test_401_renews_only_once(client_api):
             return httpx.Response(401)
 
     api.override = reject
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "UNAUTHENTICATED"
     assert api.auth_calls == 2
     assert sum(r.method == "GET" for r in api.requests) == 2
@@ -159,7 +162,7 @@ async def test_errors_retries(client_api, status, expected):
             )
 
     api.override = failure
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == expected
     assert sum(r.method == "GET" for r in api.requests) == (
         3 if status in {429, 502, 503, 504} else 1
@@ -175,7 +178,7 @@ async def test_redirect_never_followed(client_api):
             return httpx.Response(302, headers={"location": "https://evil.invalid/steal"})
 
     api.override = redirect
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert not result.ok
     assert all(r.url.host == "api.pluggy.ai" for r in api.requests)
 
@@ -189,7 +192,7 @@ async def test_raw_timeout(client_api):
             await asyncio.sleep(0.1)
 
     api.override = slow
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "UPSTREAM_TIMEOUT"
 
 
@@ -197,7 +200,7 @@ async def test_response_size_limit(client_api):
     client, api = client_api
     client.settings.max_response_bytes = 1024
     api.accounts[0]["name"] = "x" * 3000
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "UPSTREAM_ERROR"
 
 
@@ -244,7 +247,7 @@ async def test_log_privacy(client_api, capsys):
     client, api = client_api
     configure_logging()
     logging.getLogger("httpx").error("PRIVATE_API_KEY PRIVATE_URL")
-    await Runtime(client.settings, client).invoke("list_accounts")
+    await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     captured = capsys.readouterr()
     assert not captured.out
     assert "list_accounts" in captured.err
@@ -258,10 +261,11 @@ async def test_tools_schema_and_annotations(client_api):
     client, _ = client_api
     server, _ = build_server(client.settings, client)
     tools = await server.list_tools()
-    assert {t.name for t in tools} == {name for name, _ in CASES}
+    assert {t.name for t in tools} == {name for name, _ in CASES} | {"sync_item"}
     for tool in tools:
-        assert tool.annotations.readOnlyHint and not tool.annotations.destructiveHint
-        assert "item_id" not in tool.inputSchema.get("properties", {})
+        assert tool.annotations.readOnlyHint == (tool.name != "sync_item")
+        assert not tool.annotations.destructiveHint
+        assert "item_id" in tool.inputSchema["required"]
         assert tool.outputSchema
     tx = next(t for t in tools if t.name == "list_transactions")
     assert "page_size" not in tx.inputSchema["properties"]
@@ -275,7 +279,7 @@ async def test_auth_failure_is_not_retried(client_api):
             raise httpx.ConnectError("PRIVATE_NETWORK_DETAILS")
 
     api.override = broken_auth
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "UPSTREAM_UNAVAILABLE"
     assert len(api.requests) == 1
 
@@ -291,7 +295,7 @@ async def test_network_get_retries(client_api, monkeypatch):
             raise httpx.ReadTimeout("PRIVATE_NETWORK_DETAILS")
 
     api.override = broken_get
-    result = await Runtime(client.settings, client).invoke("list_accounts")
+    result = await Runtime(client.settings, client).invoke("list_accounts", item_id=ITEM)
     assert result.error["code"] == "UPSTREAM_TIMEOUT"
     assert sum(r.method == "GET" for r in api.requests) == 3
     assert api.auth_calls == 1

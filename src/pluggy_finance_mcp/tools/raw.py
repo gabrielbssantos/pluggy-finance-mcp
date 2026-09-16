@@ -41,12 +41,12 @@ def date_range(date_from: str | None, date_to: str | None) -> None:
 
 
 class RawService:
-    def __init__(self, client: PluggyClient) -> None:
+    def __init__(self, client: PluggyClient, item_id: str) -> None:
         self.client = client
-        self.scope = ItemScope(client)
+        self.scope = ItemScope(client, item_id)
 
     async def get_connection_status(self) -> Payload:
-        row = await self.client.get("item", self.scope.item_id)
+        row = await self.client.get_item(self.scope.item_id)
         if row.get("id") != self.scope.item_id:
             raise FinanceError("NOT_FOUND")
         return Payload(project("item", row))

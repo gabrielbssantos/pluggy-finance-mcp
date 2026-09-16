@@ -5,7 +5,6 @@ smoke_token="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 container_id="$(docker run -d --rm -p 127.0.0.1::8080 \
   -e PLUGGY_CLIENT_ID=synthetic-client \
   -e PLUGGY_CLIENT_SECRET=synthetic-secret \
-  -e PLUGGY_ITEM_ID=00000000-0000-0000-0000-000000000001 \
   -e MCP_BEARER_TOKEN="$smoke_token" \
   "$image_name")"
 trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT
@@ -25,6 +24,6 @@ curl -fsS "http://127.0.0.1:$container_port/mcp" \
   -H "Authorization: Bearer $smoke_token" \
   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | python3 -c 'import json,sys; assert len(json.load(sys.stdin)["result"]["tools"]) == 18'
+  | python3 -c 'import json,sys; assert len(json.load(sys.stdin)["result"]["tools"]) == 21'
 test "$(docker exec "$container_id" id -u)" != 0
 printf 'Container HTTP smoke passed (no Pluggy data requested).\n'

@@ -9,9 +9,9 @@ from pluggy_finance_mcp.policy.readonly import resource_id
 
 
 class ItemScope:
-    def __init__(self, client: PluggyClient) -> None:
+    def __init__(self, client: PluggyClient, item_id: str) -> None:
         self.client = client
-        self.item_id = str(client.settings.pluggy_item_id)
+        self.item_id = resource_id(item_id)
         self.accounts: dict[str, dict[str, Any]] = {}
         self.investments: dict[str, dict[str, Any]] = {}
 

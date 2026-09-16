@@ -1,5 +1,40 @@
 # Validação da implementação 0.1.0
 
+## Evolução atual — sincronização manual
+
+Validação local desta alteração, com o ambiente `.venv` existente (o executável `uv`
+não estava disponível no PATH):
+
+- `.venv/bin/pytest -q`: **132 testes aprovados**, com HTTP Pluggy simulado.
+- Ruff lint e formato: aprovados; Mypy: aprovado nos 20 módulos de produção.
+- `scripts/check_openapi_drift.py`: snapshot e catálogo local válidos; PATCH de Item
+  classificado como habilitado e sujeito à verificação de drift.
+- `scripts/smoke_stdio.py --mock`: **21 tools descobertas**, consultas sintéticas aprovadas.
+- Testes de transporte confirmam schemas iguais em stdio/HTTP e compatibilidade das consultas.
+- Cobertura nova: API Key compartilhada, 401, múltiplos Items, polling, timeout, execução
+  existente/concorrente, restrições, 403, 429, falha de rede, MFA, login, OUTDATED,
+  sucesso parcial, logs sanitizados e ausência de PATCH nas consultas.
+- Nenhuma conta real sincronizada, nenhum perfil/memória Hermes modificado, nenhum commit.
+- Testes reais de plano, instituição e memória em nova sessão seguem o roteiro do README.
+  Não foram repetidos build/container, auditoria de dependências ou comparação remota;
+  os resultados abaixo pertencem à versão anterior.
+
+Arquivos de produção alterados: `config.py`, `server.py`, `errors.py`, `client/http.py`,
+`client/responses.py`, `policy/item_scope.py` e `tools/raw.py`; novo `sync.py`.
+Todos ficam em `src/pluggy_finance_mcp/`. O `PluggyAuth` existente foi mantido como gerenciador
+de chave em memória; o novo serviço concentra a decisão de atualizar e o polling.
+O escopo de recursos passou a ser construído com o UUID de cada chamada.
+
+Testes alterados: `conftest.py`, `test_contract.py`, `test_raw_security.py`,
+`test_semantic.py`, `test_transports.py`; novo `test_sync.py` (todos em `tests/`).
+Configuração/documentação alterada: `.env.example`, `README.md`, `CHANGELOG.md`,
+`deploy/cloud-run.yaml`, `openapi/classifications.json`, `scripts/openapi_catalog.py`,
+`scripts/smoke_stdio.py`, `scripts/smoke_container.sh` e os documentos
+`OPERACAO_LOCAL.md`, `SEGURANCA.md`, `ENDPOINTS_PLUGGY.md`, `ESPECIFICACAO_TECNICA.md`,
+`DEPLOY_CLOUD_RUN.md` e este arquivo em `docs/`.
+
+## Registro histórico da versão anterior
+
 Verificações executadas em 2026-09-14, sem credenciais ou dados financeiros reais:
 
 | Verificação | Resultado |

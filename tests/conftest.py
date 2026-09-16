@@ -21,7 +21,6 @@ def settings(**kwargs):
     return Settings(
         pluggy_client_id="synthetic-client",
         pluggy_client_secret="synthetic-secret",
-        pluggy_item_id=ITEM,
         **kwargs,
     )
 

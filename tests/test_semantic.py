@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 import pytest
-from conftest import BANK, CARD, FOREIGN, account, page, transaction
+from conftest import BANK, CARD, FOREIGN, ITEM, account, page, transaction
 
 from pluggy_finance_mcp.server import Runtime
 from pluggy_finance_mcp.tools.classification import classify
@@ -37,7 +37,9 @@ async def test_monthly_purchase_basis_and_decimal(client_api):
         tx(10, accountId=CARD, amount=-2, type="CREDIT", operationType="ESTORNO"),
         tx(11, accountId=CARD, amount=-100, type="CREDIT", operationType="PAGAMENTO_FATURA"),
     ]
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert result.ok
     brl = next(row for row in result.data["by_currency"] if row["currency"] == "BRL")
     assert Decimal(brl["gross_expenses"]) == Decimal("10.3")
@@ -62,7 +64,9 @@ async def test_timezone_boundaries_and_duplicate_id(client_api):
         tx(3, date="2026-09-01T03:00:00Z"),
         tx(4, date="2026-10-01T03:00:00Z"),
     ]
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert result.data["by_currency"][0]["net_expenses"] == "20"
     req = next(r for r in api.requests if r.url.path == "/v2/transactions")
     assert req.url.params["dateFrom"] == "2026-09-01"
@@ -81,7 +85,9 @@ async def test_pagination_and_repeated_cursor(client_api):
             )
 
     api.override = cursor_page
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert "REPEATED_CURSOR" in result.warnings
     assert result.data["by_currency"][0]["net_expenses"] == "20"
     assert result.meta["pages_consulted"] == 3
@@ -90,7 +96,9 @@ async def test_pagination_and_repeated_cursor(client_api):
 async def test_page_limit(client_api):
     client, api = client_api
     client.settings.semantic_max_pages = 2
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert "PAGE_LIMIT" in result.warnings
     assert result.data["by_currency"][0]["net_expenses"] == "10"
     assert not result.meta["complete"]
@@ -100,7 +108,9 @@ async def test_record_limit_keeps_whole_pages(client_api):
     client, api = client_api
     client.settings.semantic_max_records = 3
     api.transactions[BANK] = [tx(1), tx(2)]
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert "RECORD_LIMIT_WHOLE_PAGE_OMITTED" in result.warnings
     assert result.data["by_currency"] == []
     assert result.meta["records_consulted"] == 2
@@ -115,7 +125,9 @@ async def test_timeout_retains_previous_pages(client_api):
             await asyncio.sleep(0.15)
 
     api.override = slow_card
-    result = await Runtime(client.settings, client).invoke("get_monthly_expenses", month="2026-09")
+    result = await Runtime(client.settings, client).invoke(
+        "get_monthly_expenses", item_id=ITEM, month="2026-09"
+    )
     assert result.ok and "TIME_LIMIT" in result.warnings
     assert result.data["by_currency"][0]["net_expenses"] == "10"
 
@@ -128,7 +140,7 @@ async def test_portfolio_active_and_missing_values(client_api):
             {**api.investments[0], "id": str(UUID(int=201)), "balance": None},
         ]
     )
-    result = await Runtime(client.settings, client).invoke("get_investment_portfolio")
+    result = await Runtime(client.settings, client).invoke("get_investment_portfolio", item_id=ITEM)
     assert result.data["groups"][0]["balance"] == "500"
     assert len(result.data["positions"]) == 2
     assert len(result.data["excluded_positions"]) == 1
@@ -141,7 +153,7 @@ async def test_net_worth_does_not_double_count_bills_or_credit_limit(client_api)
     api.bills.extend(
         [{**api.bills[0], "id": str(UUID(int=300)), "totalAmount": 5000, "dueDate": "2025-01-01"}]
     )
-    result = await Runtime(client.settings, client).invoke("get_net_worth")
+    result = await Runtime(client.settings, client).invoke("get_net_worth", item_id=ITEM)
     assert result.data["estimates"][0]["estimated_net_worth"] == "1400"
     assert not result.data["complete"]
     assert not any(r.url.path == "/bills" for r in api.requests)
@@ -151,14 +163,14 @@ async def test_net_worth_does_not_double_count_bills_or_credit_limit(client_api)
 async def test_selected_accounts(client_api):
     client, api = client_api
     result = await Runtime(client.settings, client).invoke(
-        "get_monthly_expenses", month="2026-09", account_ids=[CARD]
+        "get_monthly_expenses", item_id=ITEM, month="2026-09", account_ids=[CARD]
     )
     assert result.data["by_currency"][0]["net_expenses"] == "20"
     assert all(
         r.url.params["accountId"] == CARD for r in api.requests if r.url.path == "/v2/transactions"
     )
     result = await Runtime(client.settings, client).invoke(
-        "get_total_balance", account_ids=[FOREIGN]
+        "get_total_balance", item_id=ITEM, account_ids=[FOREIGN]
     )
     assert result.error["code"] == "NOT_FOUND"
 
@@ -173,7 +185,7 @@ async def test_selected_investments_after_budget_stop(client_api):
 
     api.override = multi
     result = await Runtime(client.settings, client).invoke(
-        "get_investment_portfolio", investment_ids=[FOREIGN]
+        "get_investment_portfolio", item_id=ITEM, investment_ids=[FOREIGN]
     )
     assert result.data["positions"] == []
     assert "PAGE_LIMIT" in result.warnings
@@ -214,7 +226,7 @@ def test_amount_and_classifier():
 async def test_net_worth_unknown_is_not_zero(client_api):
     client, api = client_api
     api.accounts[0]["balance"] = None
-    result = await Runtime(client.settings, client).invoke("get_net_worth")
+    result = await Runtime(client.settings, client).invoke("get_net_worth", item_id=ITEM)
     estimate = result.data["estimates"][0]
     assert estimate["bank_balance"] is None
     assert estimate["estimated_net_worth"] is None
@@ -224,7 +236,7 @@ async def test_net_worth_unknown_is_not_zero(client_api):
 async def test_net_worth_unfetched_investments_are_not_zero(client_api):
     client, api = client_api
     client.settings.semantic_max_pages = 1
-    result = await Runtime(client.settings, client).invoke("get_net_worth")
+    result = await Runtime(client.settings, client).invoke("get_net_worth", item_id=ITEM)
     estimate = result.data["estimates"][0]
     assert estimate["investments"] is None
     assert estimate["estimated_net_worth"] is None

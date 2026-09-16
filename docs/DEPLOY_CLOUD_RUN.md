@@ -48,7 +48,7 @@ Antes de publicar, escolha projeto e região e prepare:
 
 1. Um repositório Artifact Registry e a imagem linux/amd64 referenciada por digest.
 2. Uma conta de serviço exclusiva para este serviço.
-3. Secrets `pluggy-client-id`, `pluggy-client-secret`, `pluggy-item-id` e
+3. Secrets `pluggy-client-id`, `pluggy-client-secret` e
    `pluggy-mcp-bearer-token`; conceda à conta de serviço acesso apenas a esses secrets.
 4. Cópia de `deploy/cloud-run.yaml`, preenchendo projeto, imagem, conta, versões dos secrets
    e o hostname HTTPS real. Nenhum segredo em texto deve entrar no YAML ou imagem.

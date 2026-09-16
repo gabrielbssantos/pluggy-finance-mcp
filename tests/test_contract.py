@@ -26,7 +26,7 @@ def test_snapshot_and_runtime_allowlist():
     assert set(classes) == set(operations(doc))
     assert {key for key, row in classes.items() if row["scope"] == "enabled"} == {
         "GET " + op.path for op in OPERATIONS.values()
-    }
+    } | {"PATCH /items/{id}"}
     for op in OPERATIONS.values():
         current = doc["paths"][op.path]["get"]
         allowed = {p["name"] for p in current.get("parameters", []) if p["in"] == "query"}

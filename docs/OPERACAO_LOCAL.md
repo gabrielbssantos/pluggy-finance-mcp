@@ -13,8 +13,8 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Preencha os três campos obrigatórios no arquivo ignorado pelo Git:
-`PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_ITEM_ID`.
+Preencha os dois campos obrigatórios no arquivo ignorado pelo Git:
+`PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`.
 Nunca use uma API Key temporária como credencial de configuração. Ela é obtida e renovada
 em memória. O Item precisa pertencer à aplicação e estar autorizado no MeuPluggy previamente.
 
@@ -45,10 +45,9 @@ mcp_servers:
       MCP_AUTH_MODE: local_process
       PLUGGY_CLIENT_ID: "${PLUGGY_CLIENT_ID}"
       PLUGGY_CLIENT_SECRET: "${PLUGGY_CLIENT_SECRET}"
-      PLUGGY_ITEM_ID: "${PLUGGY_ITEM_ID}"
 ```
 
-Inicie o Hermes com as três variáveis carregadas pelo seu mecanismo de secrets. O Hermes
+Inicie o Hermes com as duas credenciais carregadas pelo seu mecanismo de secrets. O Hermes
 filtra o ambiente dos subprocessos; por isso os campos `env` acima são explícitos. Não coloque
 valores reais no YAML versionado. O `.env` do projeto não é carregado automaticamente pelo Python.
 
@@ -59,14 +58,18 @@ Se preferir que o `uv` carregue `.env`, configure `command` com o caminho absolu
 args: ["run", "--frozen", "--env-file", ".env", "python", "-m", "pluggy_finance_mcp"]
 ```
 
-Nesse caso, omita do bloco `env` as três credenciais interpoladas, para não sobrescrever o arquivo
+Nesse caso, omita do bloco `env` as duas credenciais interpoladas, para não sobrescrever o arquivo
 com variáveis vazias. Mantenha apenas as configurações locais de transporte.
 
 Esta implementação não altera sua configuração Hermes nem lê arquivos de credenciais.
 
 ## Uso
 
-Comece com `get_connection_status` e `list_accounts`. Use os IDs retornados para detalhes.
+Forneça o `itemId` no primeiro uso e peça ao Hermes que lembre a associação ao banco em sua memória.
+Comece com `get_item(item_id)` e `list_accounts(item_id)`. Todas as tools exigem `item_id`;
+use os IDs retornados para detalhes. A memória pertence ao Hermes; o MCP não acessa `MEMORY.md`.
+Para atualizar, solicite explicitamente `sync_item(item_id)`. Consultas não iniciam sincronização.
+Após timeout ou `wait=false`, acompanhe com `get_sync_status(item_id)`.
 Em `list_transactions`, envie `pagination.next_cursor` na próxima chamada junto com a mesma conta
 e filtros. O servidor só extrai o cursor da resposta; nunca segue a URL de paginação upstream.
 As páginas v2 têm até 500 registros e não aceitam `page_size`.

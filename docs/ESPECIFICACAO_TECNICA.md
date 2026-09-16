@@ -1,5 +1,11 @@
 # Especificação técnica — Pluggy Finance MCP pessoal
 
+> **Evolução atual:** os requisitos históricos de Item global, 18 tools e servidor apenas
+> de leitura foram substituídos: uma instância atende vários Items, todas as tools exigem
+> `item_id`, e apenas `sync_item` inicia atualização sob demanda. Não há Item no ambiente
+> nem registry local. Consulte o [README](../README.md) e a [operação local](OPERACAO_LOCAL.md)
+> para configurar a versão atual; exemplos antigos abaixo são históricos.
+
 > **Decisões da implementação 0.1.0:** este documento preserva a proposta original.
 > A entrega implementa uso local completo e HTTP opcional com bearer estático, preparado para
 > Cloud Run sem deploy. Identity e OAuth ficam fora desta versão. Transações v2 não aceitam

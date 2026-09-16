@@ -114,7 +114,7 @@ NESTED = {
         }
     },
     "investment": {"institution": {"name"}},
-    "item": {"connector": {"name", "products"}, "error": {"code"}},
+    "item": {"connector": {"id", "name", "products"}, "error": {"code"}},
     "bill": {
         "payments": {"valueType", "paymentDate", "paymentMode", "amount", "currencyCode"},
         "financeCharges": {"type", "amount", "currencyCode"},

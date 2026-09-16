@@ -118,7 +118,8 @@ def render(document: dict[str, Any], classifications: dict[str, Any], digest: st
         )
     lines += [
         "",
-        "`enabled`: allowlist de leitura; `optional`: Identity não implementada;",
+        "`enabled`: consultas e sincronização explícita de Item; "
+        "`optional`: Identity não implementada;",
         "`internal`: autenticação exclusivamente interna; `excluded`: fora do MCP.",
         "R0: pública; R1: financeira; R2: altamente sensível; R3: administrativa; R4: pagamentos.",
         "",

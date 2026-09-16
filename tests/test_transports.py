@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 import uvicorn
-from conftest import ITEM, TOKEN, settings
+from conftest import TOKEN, settings
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
@@ -116,7 +116,6 @@ async def test_real_entrypoint_discovery_and_eof(tmp_path):
     env = {
         "PLUGGY_CLIENT_ID": "synthetic",
         "PLUGGY_CLIENT_SECRET": "synthetic",
-        "PLUGGY_ITEM_ID": ITEM,
         "MCP_TRANSPORT": "stdio",
     }
     with (tmp_path / "stderr").open("w+") as errlog:
@@ -128,7 +127,7 @@ async def test_real_entrypoint_discovery_and_eof(tmp_path):
         ) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
-                assert len((await session.list_tools()).tools) == 18
+                assert len((await session.list_tools()).tools) == 21
     # Closing stdin must terminate a local server without a listener or external requests.
     proc = await asyncio.create_subprocess_exec(
         sys.executable,

@@ -217,7 +217,7 @@
   },
   "PATCH /items/{id}": {
     "risk": "R3",
-    "scope": "excluded"
+    "scope": "enabled"
   },
   "PATCH /items/{id}/disable-auto-sync": {
     "risk": "R3",

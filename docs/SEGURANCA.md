@@ -2,20 +2,24 @@
 
 ## Fronteiras
 
-- Uma aplicação Pluggy, um `PLUGGY_ITEM_ID`, nenhum parâmetro de Item nas tools.
-- Allowlist fixa de 12 operações GET. O cliente de autenticação tem um único `POST /auth` interno.
+- Uma aplicação Pluggy, múltiplos Items; cada tool exige `item_id` validado como UUID.
+- Allowlist fixa de 12 operações GET e `PATCH /items/{id}` exclusivo de `sync_item`, com corpo `{}`.
+  O cliente de autenticação tem um único `POST /auth` interno.
 - Host fixo `https://api.pluggy.ai`; nenhum redirect, proxy de ambiente ou URL fornecida pelo modelo.
 - IDs são UUIDs. Contas e investimentos devem declarar o Item esperado; transações devem apontar
   para uma conta autorizada. Faturas exigem prova pela listagem de cartão autorizado antes do detalhe.
 - Listagens conferem o vínculo dos registros quando ele é fornecido. Provas de vínculo vivem apenas
   durante a chamada da tool. Não há banco, cache externo, enumeração de Items ou Identity.
-- Nenhum endpoint de escrita ou de pagamentos é registrado. As anotações MCP não substituem o bloqueio.
+- A única mutação exposta é a sincronização explícita. Não há pagamentos ou executor HTTP genérico.
+  `sync_item` tem readOnlyHint=false e idempotentHint=false. As anotações não substituem o bloqueio.
 
 ## Credenciais e dados
 
 A API Key só existe em memória. A renovação ocorre 15 minutos antes do prazo de duas horas,
-com lock concorrente; em `401`, uma renovação e nova leitura são permitidas. Há até três tentativas
-GET totais por consulta HTTP, com jitter e `Retry-After`, dentro do deadline da tool. Autenticação
+com lock concorrente; em `401`, uma renovação e repetição são permitidas. Há até duas repetições
+GET para falhas transitórias, além da recuperação única de 401, dentro do deadline da tool.
+PATCH só é repetido em 401 (uma vez) ou 429 (até duas vezes), nunca em timeout/5xx.
+Retry-After é respeitado ou retornado ao chamador se exceder o limite da chamada. Autenticação
 interna não é retentada automaticamente em falha de rede.
 
 A projeção de resposta é uma allowlist explícita de campos. Remove owner, CPF, dados de conta,

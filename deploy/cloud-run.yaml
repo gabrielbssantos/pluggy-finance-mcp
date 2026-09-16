@@ -39,11 +39,6 @@ spec:
                 secretKeyRef:
                   name: pluggy-client-secret
                   key: '1'
-            - name: PLUGGY_ITEM_ID
-              valueFrom:
-                secretKeyRef:
-                  name: pluggy-item-id
-                  key: '1'
             - name: MCP_BEARER_TOKEN
               valueFrom:
                 secretKeyRef:
