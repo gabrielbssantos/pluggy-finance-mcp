@@ -3,6 +3,7 @@ from uuid import UUID
 
 import httpx
 import pytest
+from mcp.server.auth.provider import AccessToken
 
 from pluggy_finance_mcp.client.http import PluggyClient
 from pluggy_finance_mcp.config import Settings
@@ -15,6 +16,10 @@ BILL = str(UUID(int=5))
 FOREIGN = str(UUID(int=6))
 TRANSACTION = str(UUID(int=7))
 TOKEN = "synthetic-mcp-bearer-token-for-tests-only"
+REMOTE_URL = "https://mcp.example.test/mcp"
+ISSUER_URL = "https://identity.example.test/"
+SUBJECT = "provider|single-user"
+CLIENT_ID = "synthetic-client-id"
 
 
 def settings(**kwargs):
@@ -23,6 +28,38 @@ def settings(**kwargs):
         pluggy_client_secret="synthetic-secret",
         **kwargs,
     )
+
+
+def remote_settings(**kwargs):
+    values = {
+        "mcp_transport": "streamable-http",
+        "mcp_auth_mode": "oauth",
+        "mcp_public_url": REMOTE_URL,
+        "mcp_oauth_issuer_url": ISSUER_URL,
+        "mcp_oauth_allowed_subject": SUBJECT,
+        "mcp_oauth_allowed_client_ids": CLIENT_ID,
+        "mcp_allowed_hosts": "mcp.example.test,localhost,127.0.0.1",
+    }
+    values.update(kwargs)
+    return settings(**values)
+
+
+class StaticTokenVerifier:
+    def __init__(self, scopes=None):
+        self.scopes = scopes if scopes is not None else ["pluggy:access"]
+
+    async def verify_token(self, token: str):
+        if token != TOKEN:
+            return None
+        return AccessToken(
+            token=token,
+            client_id=CLIENT_ID,
+            scopes=self.scopes,
+            expires_at=None,
+            resource=REMOTE_URL,
+            subject=SUBJECT,
+            claims={"iss": ISSUER_URL},
+        )
 
 
 def account(identifier=BANK, type="BANK", balance=1000, currency="BRL"):

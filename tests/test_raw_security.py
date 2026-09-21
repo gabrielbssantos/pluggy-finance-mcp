@@ -231,6 +231,7 @@ def test_cursor_is_opaque():
     [
         {"mcp_transport": "streamable-http"},
         {"mcp_auth_mode": "none"},
+        {"mcp_auth_mode": "bearer"},
         {"pluggy_base_url": "https://evil.invalid"},
         {"enable_identity_tool": True},
         {"log_pii": True},
@@ -241,6 +242,30 @@ def test_cursor_is_opaque():
 def test_configuration_fail_closed(kwargs):
     with pytest.raises(ValidationError):
         settings(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"mcp_public_url": None},
+        {"mcp_oauth_issuer_url": None},
+        {"mcp_public_url": "http://mcp.example.test/mcp"},
+        {"mcp_public_url": "https://user:password@mcp.example.test/mcp"},
+        {"mcp_public_url": "https://mcp.example.test/wrong"},
+        {"mcp_public_url": "https://other.example.test/mcp"},
+        {"mcp_oauth_issuer_url": "http://identity.example.test"},
+        {"mcp_oauth_allowed_subject": ""},
+        {"mcp_oauth_allowed_client_ids": ""},
+        {"mcp_oauth_allowed_client_ids": "client,*"},
+        {"mcp_oauth_scope": "two scopes"},
+        {"mcp_oauth_scope": 'invalid"scope'},
+    ],
+)
+def test_remote_oauth_configuration_fail_closed(overrides):
+    from conftest import remote_settings
+
+    with pytest.raises(ValidationError):
+        remote_settings(**overrides)
 
 
 async def test_log_privacy(client_api, capsys):

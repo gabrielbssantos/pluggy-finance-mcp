@@ -6,12 +6,12 @@
 > nem registry local. Consulte o [README](../README.md) e a [operação local](OPERACAO_LOCAL.md)
 > para configurar a versão atual; exemplos antigos abaixo são históricos.
 
-> **Decisões da implementação 0.1.0:** este documento preserva a proposta original.
-> A entrega implementa uso local completo e HTTP opcional com bearer estático, preparado para
-> Cloud Run sem deploy. Identity e OAuth ficam fora desta versão. Transações v2 não aceitam
+> **Decisões da implementação atual:** este documento preserva a proposta original.
+> A entrega implementa uso local completo e HTTP opcional com OAuth 2.1/OIDC, preparado para
+> hospedagem remota sem deploy automático. Identity fica fora desta versão. Transações v2 não aceitam
 > `page_size`; contas, faturas e extratos não recebem parâmetros de paginação não documentados.
 > As instruções operacionais atuais estão em `OPERACAO_LOCAL.md`, `AGREGACOES.md`,
-> `SEGURANCA.md` e `DEPLOY_CLOUD_RUN.md`. O SDK MCP está fixado na linha 1.x mantida.
+> `SEGURANCA.md`, `DEPLOY_REMOTE.md` e `DEPLOY_CLOUD_RUN.md`. O SDK MCP está fixado na linha 1.x mantida.
 
 | Campo | Valor |
 |---|---|

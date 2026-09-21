@@ -9,6 +9,8 @@ from typing import Any, Literal
 from uuid import UUID, uuid4
 
 import simplejson
+from mcp.server.auth.provider import TokenVerifier
+from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
@@ -130,7 +132,15 @@ class Runtime:
         )
 
 
-def build_server(settings: Settings, client: PluggyClient | None = None) -> tuple[FastMCP, Runtime]:
+def build_server(
+    settings: Settings,
+    client: PluggyClient | None = None,
+    token_verifier: TokenVerifier | None = None,
+) -> tuple[FastMCP, Runtime]:
+    if settings.mcp_transport == "streamable-http" and token_verifier is None:
+        raise ValueError("Remote MCP requires an OAuth token verifier")
+    if settings.mcp_transport == "stdio" and token_verifier is not None:
+        raise ValueError("Local MCP must not configure an OAuth token verifier")
     runtime = Runtime(settings, client)
 
     @asynccontextmanager
@@ -142,8 +152,18 @@ def build_server(settings: Settings, client: PluggyClient | None = None) -> tupl
                 await runtime.client.close()
 
     hosts = settings.hosts + [host + ":*" for host in settings.hosts]
+    auth = None
+    if settings.mcp_transport == "streamable-http":
+        auth = AuthSettings(
+            issuer_url=settings.mcp_oauth_issuer_url,
+            resource_server_url=settings.mcp_public_url,
+            required_scopes=[settings.mcp_oauth_scope],
+            validate_token_resource=True,
+        )
     server = FastMCP(
         "Pluggy Finance",
+        token_verifier=token_verifier,
+        auth=auth,
         lifespan=lifespan,
         stateless_http=True,
         json_response=True,

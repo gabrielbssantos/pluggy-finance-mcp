@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Single-user, read-only Pluggy finance MCP"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["mcp>=1.28,<2", "httpx>=0.28,<1", "pydantic>=2.11,<3", "pydantic-settings>=2.9,<3", "uvicorn>=0.35,<1", "simplejson>=3.20,<4"]
+dependencies = ["mcp>=1.28,<2", "httpx>=0.28,<1", "pydantic>=2.11,<3", "pydantic-settings>=2.9,<3", "uvicorn>=0.35,<1", "simplejson>=3.20,<4", "pyjwt[crypto]>=2.10,<3"]
 
 [project.scripts]
 pluggy-finance-mcp = "pluggy_finance_mcp.__main__:main"

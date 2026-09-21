@@ -2,6 +2,9 @@
 
 ## Não lançado — sincronização manual e múltiplos Items
 
+- Modo remoto migra de bearer estático para OAuth 2.1/OIDC com JWT, Protected Resource Metadata,
+  issuer/audience/scope, allowlist de subject/client IDs e rotação JWKS.
+- Modo local `stdio` permanece sem login; configuração bearer remota foi removida.
 - `get_item`, `get_sync_status` e `sync_item` explícito, com polling limitado e intervenção humana.
 - Migração: todas as tools agora exigem `item_id`; removido o Item global do ambiente.
 - Uma instância e autenticação em memória compartilhada; aliases pertencem à memória do Hermes.
