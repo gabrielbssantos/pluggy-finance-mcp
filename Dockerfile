@@ -19,7 +19,7 @@ RUN useradd --uid 10001 --create-home app
 WORKDIR /app
 COPY --from=build --chown=10001:10001 /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
-    MCP_TRANSPORT=streamable-http MCP_AUTH_MODE=bearer PORT=8080
+    MCP_TRANSPORT=streamable-http MCP_AUTH_MODE=oauth PORT=8080
 USER 10001:10001
 EXPOSE 8080
 CMD ["python", "-m", "pluggy_finance_mcp"]

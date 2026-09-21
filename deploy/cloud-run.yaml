@@ -26,9 +26,21 @@ spec:
             - name: MCP_TRANSPORT
               value: streamable-http
             - name: MCP_AUTH_MODE
-              value: bearer
+              value: oauth
             - name: MCP_ALLOWED_HOSTS
               value: ACTUAL_SERVICE_HOST.run.app
+            - name: MCP_PUBLIC_URL
+              value: https://ACTUAL_SERVICE_HOST.run.app/mcp
+            - name: MCP_OAUTH_ISSUER_URL
+              value: https://YOUR_OIDC_ISSUER
+            - name: MCP_OAUTH_ALLOWED_SUBJECT
+              value: YOUR_STABLE_SUBJECT
+            - name: MCP_OAUTH_ALLOWED_CLIENT_IDS
+              value: GPT_CLIENT_ID,CLAUDE_CLIENT_ID,HERMES_CLIENT_ID
+            - name: MCP_OAUTH_SCOPE
+              value: pluggy:access
+            - name: MCP_OAUTH_SIGNING_ALGORITHM
+              value: RS256
             - name: PLUGGY_CLIENT_ID
               valueFrom:
                 secretKeyRef:
@@ -38,11 +50,6 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: pluggy-client-secret
-                  key: '1'
-            - name: MCP_BEARER_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: pluggy-mcp-bearer-token
                   key: '1'
           startupProbe:
             tcpSocket:

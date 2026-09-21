@@ -3,7 +3,7 @@
 Gerado por `scripts/sync_openapi.py`; novas operações não habilitam tools.
 
 Fonte: https://api.pluggy.ai/oas3.json · OpenAPI 3.1.0 · 86 operações.
-SHA-256: `2a54e8f84f17b8e26739799bb73f32bb8d5d0a98ec3ae4c0ec977b8c55aef422`
+SHA-256: `1006cd261ee698086d0759386fdecab4cc558bb2a5206ee0b634b6a0fe72bb69`
 
 | Método e caminho | operationId | Risco | MCP |
 |---|---|---|---|

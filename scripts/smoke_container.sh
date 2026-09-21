@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 image_name="${1:-pluggy-finance-mcp:local}"
-smoke_token="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 container_id="$(docker run -d --rm -p 127.0.0.1::8080 \
   -e PLUGGY_CLIENT_ID=synthetic-client \
   -e PLUGGY_CLIENT_SECRET=synthetic-secret \
-  -e MCP_BEARER_TOKEN="$smoke_token" \
+  -e MCP_PUBLIC_URL=https://localhost/mcp \
+  -e MCP_OAUTH_ISSUER_URL=https://identity.example.invalid \
+  -e MCP_OAUTH_ALLOWED_SUBJECT=synthetic-subject \
+  -e MCP_OAUTH_ALLOWED_CLIENT_IDS=synthetic-client \
   "$image_name")"
 trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT
 container_port="$(docker port "$container_id" 8080/tcp | sed 's/.*://')"
@@ -16,14 +18,7 @@ done
 curl -fsS "http://127.0.0.1:$container_port/readyz" >/dev/null
 status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:$container_port/mcp")"
 test "$status" = 401
-curl -fsS "http://127.0.0.1:$container_port/mcp" \
-  -H "Authorization: Bearer $smoke_token" \
-  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}}' >/dev/null
-curl -fsS "http://127.0.0.1:$container_port/mcp" \
-  -H "Authorization: Bearer $smoke_token" \
-  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | python3 -c 'import json,sys; assert len(json.load(sys.stdin)["result"]["tools"]) == 21'
+curl -fsS "http://127.0.0.1:$container_port/.well-known/oauth-protected-resource/mcp" \
+  | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["scopes_supported"] == ["pluggy:access"]'
 test "$(docker exec "$container_id" id -u)" != 0
-printf 'Container HTTP smoke passed (no Pluggy data requested).\n'
+printf 'Container OAuth boundary smoke passed (no Pluggy data requested).\n'

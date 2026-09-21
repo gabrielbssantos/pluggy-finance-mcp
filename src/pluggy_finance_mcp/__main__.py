@@ -16,13 +16,13 @@ def main() -> None:
             "CONFIGURATION_ERROR: verifique as variáveis de ambiente obrigatórias.", file=sys.stderr
         )
         raise SystemExit(2) from None
-    server, runtime = build_server(settings)
     configure_logging()
     if settings.mcp_transport == "stdio":
+        server, _ = build_server(settings)
         server.run(transport="stdio")
     else:
         uvicorn.run(
-            create_app(settings, server, runtime=runtime),
+            create_app(settings),
             host="0.0.0.0",
             port=settings.port,
             access_log=False,

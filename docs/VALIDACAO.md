@@ -1,5 +1,22 @@
 # Validação da implementação 0.1.0
 
+## OAuth remoto
+
+Validação da migração do modo HTTP para OAuth 2.1/OIDC:
+
+- `.venv/bin/pytest -q`: **163 testes aprovados**, todos com dados e chaves sintéticos.
+- Ruff lint/formato, Mypy e o contrato OpenAPI local aprovados.
+- Tokens RSA/ES256 válidos; issuer, audience, subject, client ID, escopo, expiração e `nbf`
+  inválidos são recusados.
+- Discovery OIDC/RFC 8414, cache JWKS, rotação de `kid`, algoritmo fixo, bloqueio de `jku`/`x5u`
+  e indisponibilidade do provedor exercitados sem rede externa.
+- Integração ASGI confirma Protected Resource Metadata, desafios `WWW-Authenticate`, 401/403,
+  headers duplicados, Host/Origin, health público e execução das 21 tools com token válido.
+- O subprocesso `stdio` continua iniciando e encerrando sem OAuth ou listener.
+- O smoke do container passa a verificar a fronteira OAuth sem exigir provedor real; build e scan
+  da imagem permanecem como gates do GitHub Actions porque o daemon Docker local está inativo.
+- Nenhuma credencial, conta real, provedor OIDC ou infraestrutura remota foi criado ou acessado.
+
 ## Evolução atual — sincronização manual
 
 Validação local desta alteração, com o ambiente `.venv` existente (o executável `uv`

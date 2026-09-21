@@ -6,8 +6,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
+import pytest
 import uvicorn
-from conftest import TOKEN, settings
+from conftest import TOKEN, StaticTokenVerifier, remote_settings, settings
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
@@ -17,6 +18,14 @@ from pluggy_finance_mcp.asgi import create_app
 from pluggy_finance_mcp.server import build_server
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_transport_authentication_cannot_be_miswired():
+    verifier = StaticTokenVerifier()
+    with pytest.raises(ValueError, match="requires an OAuth token verifier"):
+        build_server(remote_settings())
+    with pytest.raises(ValueError, match="must not configure"):
+        build_server(settings(), token_verifier=verifier)
 
 
 @asynccontextmanager
@@ -41,11 +50,10 @@ async def serving(app):
 
 async def test_stdio_and_http_same_schemas_and_execution(client_api, tmp_path):
     client, api = client_api
-    config = settings(
-        mcp_transport="streamable-http", mcp_auth_mode="bearer", mcp_bearer_token=TOKEN
-    )
-    server, runtime = build_server(config, client)
-    app = create_app(config, server, runtime=runtime)
+    config = remote_settings()
+    verifier = StaticTokenVerifier()
+    server, runtime = build_server(config, client, verifier)
+    app = create_app(config, server, verifier, runtime)
     async with serving(app) as url:
         async with httpx.AsyncClient(headers={"Authorization": f"Bearer {TOKEN}"}) as http:
             async with streamable_http_client(url + "/mcp", http_client=http) as (read, write, _):
@@ -81,11 +89,10 @@ async def test_stdio_and_http_same_schemas_and_execution(client_api, tmp_path):
 
 
 async def test_auth_hosts_origins_health():
-    config = settings(
-        mcp_transport="streamable-http", mcp_auth_mode="bearer", mcp_bearer_token=TOKEN
-    )
-    server, runtime = build_server(config)
-    app = create_app(config, server, runtime=runtime)
+    config = remote_settings()
+    verifier = StaticTokenVerifier()
+    server, runtime = build_server(config, token_verifier=verifier)
+    app = create_app(config, server, verifier, runtime)
     async with app.router.lifespan_context(app):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app), base_url="http://localhost"
@@ -97,7 +104,17 @@ async def test_auth_hosts_origins_health():
                 {"Authorization": "Bearer invalid"},
                 {"Authorization": "Basic " + TOKEN},
             ]:
-                assert (await http.post("/mcp", json={}, headers=headers)).status_code == 401
+                response = await http.post("/mcp", json={}, headers=headers)
+                assert response.status_code == 401
+                assert "resource_metadata=" in response.headers["www-authenticate"]
+            metadata = await http.get("/.well-known/oauth-protected-resource/mcp")
+            assert metadata.status_code == 200
+            assert metadata.json() == {
+                "resource": "https://mcp.example.test/mcp",
+                "authorization_servers": ["https://identity.example.test/"],
+                "scopes_supported": ["pluggy:access"],
+                "bearer_methods_supported": ["header"],
+            }
             response = await http.get("/healthz", headers={"Host": "evil.invalid"})
             assert response.status_code == 400
             response = await http.post(
@@ -110,6 +127,31 @@ async def test_auth_hosts_origins_health():
                 },
             )
             assert response.status_code == 403
+            duplicate = await http.post(
+                "/mcp",
+                json={},
+                headers=[
+                    ("Authorization", "Bearer " + TOKEN),
+                    ("Authorization", "Bearer " + TOKEN),
+                ],
+            )
+            assert duplicate.status_code == 400
+
+
+async def test_oauth_scope_is_required():
+    config = remote_settings()
+    verifier = StaticTokenVerifier(scopes=[])
+    server, runtime = build_server(config, token_verifier=verifier)
+    app = create_app(config, server, verifier, runtime)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app), base_url="http://localhost"
+        ) as http:
+            response = await http.post(
+                "/mcp", json={}, headers={"Authorization": "Bearer " + TOKEN}
+            )
+            assert response.status_code == 403
+            assert response.json()["error"] == "insufficient_scope"
 
 
 async def test_real_entrypoint_discovery_and_eof(tmp_path):

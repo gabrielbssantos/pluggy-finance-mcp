@@ -34,13 +34,20 @@ silencioso. Respostas upstream e envelopes têm limite de 2 MB, ajustável até 
 ## Transportes
 
 `stdio` não abre listener. O proprietário controla o subprocesso e seu ambiente.
-HTTP exige token aleatório de pelo menos 32 caracteres, verificado em tempo constante antes do MCP.
-Hosts são explícitos e origens não permitidas são rejeitadas. `/healthz` e `/readyz` são públicos,
-sem dados ou chamadas Pluggy. Use HTTPS fora de loopback. O header Authorization nunca é logado.
+HTTP exige OAuth 2.1/OIDC e access token JWT. O verificador usa apenas metadata e JWKS do issuer
+configurado, fixa o algoritmo assimétrico e recusa `jku`/`x5u` fornecidos pelo token. Assinatura,
+issuer, audience, expiração, validade temporal, subject, client ID e escopo são verificados. O único
+subject autorizado e os client IDs de GPT, Claude e Hermes formam allowlists explícitas.
 
-Bearer estático é adequado ao cliente pessoal que configura headers. OAuth, descoberta de metadata,
-validação de issuer/audience/scopes e integração ChatGPT ainda não estão implementados.
-`TokenValidator` define o ponto de extensão futuro; isso não constitui implementação OAuth.
+O JWKS tem tamanho, quantidade de chaves e cache limitados; `kid` desconhecido permite atualização
+controlada e falha de rede fecha o acesso. O SDK MCP publica Protected Resource Metadata e produz
+desafios `WWW-Authenticate`. Headers Authorization duplicados são rejeitados. Hosts são explícitos,
+origens não permitidas são bloqueadas, e `/healthz` e `/readyz` são públicos sem dados ou chamadas
+Pluggy. O header Authorization, tokens, claims e identificadores OAuth nunca são logados.
+
+O MCP não emite tokens nem recebe senha do usuário. Authorization Code, PKCE `S256`, consentimento,
+MFA, refresh e revogação pertencem ao provedor OIDC e aos clientes. Tokens opacos e introspecção
+estão fora do escopo atual.
 
 ## Erros e logs
 
@@ -83,5 +90,6 @@ ou comentar uma issue de drift no repositório onde for habilitado. A proteção
 de branch deve ser configurada pelo mantenedor conforme o fluxo de contribuição.
 
 O CI executa Gitleaks 8.30.1 sobre o histórico Git completo, com binário fixado por SHA-256,
-sem allowlists adicionais. Fixtures são sintéticas; o smoke HTTP gera um token efêmero.
+sem allowlists adicionais. Fixtures e chaves criptográficas de teste são geradas sinteticamente;
+o smoke HTTP não usa token nem acessa a Pluggy.
 Antes de publicar, também é necessário escanear os arquivos selecionados para o commit.

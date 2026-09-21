@@ -9,7 +9,8 @@ produto oficial da Pluggy. Existem também o [MCP da Pluggy](https://github.com/
 e o [mcp-pluggy comunitário](https://github.com/lefranchi/mcp-pluggy).
 
 **O uso local não precisa de Docker.** O Hermes inicia diretamente o processo Python por
-`stdio`. O container é opcional e serve para uma futura implantação no Cloud Run.
+`stdio`. O container é opcional e serve para implantação remota em Cloud Run ou plataforma
+equivalente.
 
 ## Execução local
 
@@ -156,15 +157,34 @@ make openapi-check  # compara o snapshot com a API pública, sem credenciais
 Os testes usam dados sintéticos e HTTP simulado para a Pluggy. Testes MCP exercitam subprocessos
 `stdio` e HTTP real em loopback; não consultam dados financeiros reais.
 
-## HTTP e Cloud Run opcionais
+## HTTP remoto com OAuth
 
-O mesmo registro de tools atende `/mcp` por Streamable HTTP. Para testar fora de Docker,
-configure `MCP_TRANSPORT=streamable-http`, `MCP_AUTH_MODE=bearer` e `MCP_BEARER_TOKEN` aleatório
-com pelo menos 32 caracteres. `/healthz` e `/readyz` não consultam a Pluggy.
+O mesmo registro de tools atende `/mcp` por Streamable HTTP. O modo remoto exige OAuth 2.1/OIDC
+e access tokens JWT; bearer estático não é aceito. O servidor atua somente como resource server:
+o login e a emissão de tokens pertencem a um provedor como Auth0, Keycloak ou Zitadel.
 
-O [guia Cloud Run](docs/DEPLOY_CLOUD_RUN.md) explica o container, Secret Manager e hosts permitidos.
-Não há deploy automático ou infraestrutura criada. OAuth e conexão com ChatGPT ficam para
-uma versão futura; esta versão remota usa bearer token estático.
+Configuração mínima:
+
+```dotenv
+MCP_TRANSPORT=streamable-http
+MCP_AUTH_MODE=oauth
+MCP_PUBLIC_URL=https://finance.example.com/mcp
+MCP_ALLOWED_HOSTS=finance.example.com
+MCP_OAUTH_ISSUER_URL=https://identity.example.com
+MCP_OAUTH_ALLOWED_SUBJECT=provider-user-id-estavel
+MCP_OAUTH_ALLOWED_CLIENT_IDS=gpt-client,claude-client,hermes-client
+MCP_OAUTH_SCOPE=pluggy:access
+MCP_OAUTH_SIGNING_ALGORITHM=RS256
+```
+
+O MCP publica Protected Resource Metadata e responde com o desafio OAuth padrão. O token precisa
+ter assinatura válida, issuer e audience exatos, prazo vigente, o subject autorizado, um client ID
+da allowlist e o escopo `pluggy:access`. `/healthz` e `/readyz` permanecem públicos e não consultam
+a Pluggy. Credenciais Pluggy ficam somente no servidor.
+
+Veja o [guia de implantação remota](docs/DEPLOY_REMOTE.md) para configurar o provedor e os clientes.
+O [exemplo Cloud Run](docs/DEPLOY_CLOUD_RUN.md) cobre a plataforma Google. Nenhum deploy ou recurso
+de infraestrutura é criado automaticamente.
 
 ## Documentação
 
@@ -172,6 +192,7 @@ uma versão futura; esta versão remota usa bearer token estático.
 - [Regras das agregações](docs/AGREGACOES.md)
 - [Segurança e contratos](docs/SEGURANCA.md)
 - [Resultados da validação](docs/VALIDACAO.md)
+- [Implantação remota e OAuth](docs/DEPLOY_REMOTE.md)
 - [Cloud Run opcional](docs/DEPLOY_CLOUD_RUN.md)
 - [Inventário OpenAPI gerado](docs/ENDPOINTS_PLUGGY.md)
 - [Especificação original e decisões da implementação](docs/ESPECIFICACAO_TECNICA.md)

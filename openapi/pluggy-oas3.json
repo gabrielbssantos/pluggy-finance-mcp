@@ -2380,7 +2380,7 @@
             "type": "string"
           },
           "totalAmount": {
-            "description": "Total amount of the purchase",
+            "description": "Total amount of the purchase. Only available on direct connectors; Open Finance connectors do not return this field",
             "type": "number"
           },
           "totalInstallments": {
@@ -4326,6 +4326,14 @@
             },
             "type": "array"
           },
+          "resourcesCollectedAt": {
+            "description": "Open Finance only. When the financial institution's resources list was last read for this Item, or `null` if it never was. Pairs with `GET /items/{id}/resources`: an empty list there means the institution shared nothing when this is set, and that the list was never obtained when this is `null`.",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "status": {
             "description": "Status of the Item",
             "type": "string"
@@ -4418,60 +4426,24 @@
         "type": "object"
       },
       "ItemResource": {
+        "description": "One resource the financial institution declared for the item's Open Finance consent, reported verbatim.",
         "properties": {
-          "availability": {
-            "description": "What the declared status and the held data say together.\n\n- `OK`: declared available, and the data is there.\n- `MISSING`: declared available, but no data came through. This is the one worth reporting.\n- `BLOCKED`: the institution reported it as unavailable or pending authorisation, and there is no data. Expected \u2014 for `PENDING_AUTHORISATION` the end user still has to authorise sharing at their institution.\n- `UNEXPECTED`: the institution does not report it as available, yet the data is there.\n- `UNDECLARED`: the data is there and the institution never listed the resource.",
-            "enum": [
-              "OK",
-              "MISSING",
-              "BLOCKED",
-              "UNEXPECTED",
-              "UNDECLARED"
-            ],
+          "resourceId": {
+            "description": "The institution's identifier for the resource.",
             "type": "string"
           },
-          "declaredStatus": {
-            "description": "Availability the institution reported for this resource. `null` when the institution never listed it. Note `PENDING_AUTHORISATION` follows the Open Finance spelling.",
+          "status": {
+            "description": "What the institution reports about this resource. Note the British spelling of PENDING_AUTHORISATION: it is Open Finance's, kept verbatim.",
             "enum": [
               "AVAILABLE",
               "UNAVAILABLE",
               "TEMPORARILY_UNAVAILABLE",
-              "PENDING_AUTHORISATION",
-              null
-            ],
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "entityIds": {
-            "description": "Ids of the records backing this resource, usable against the accounts, loans or investments endpoints. Empty when `retrieved` is `false`.",
-            "items": {
-              "format": "uuid",
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "product": {
-            "description": "Pluggy product family the resource maps to",
-            "enum": [
-              "ACCOUNT",
-              "CREDIT_CARD",
-              "LOAN",
-              "INVESTMENT"
+              "PENDING_AUTHORISATION"
             ],
             "type": "string"
-          },
-          "resourceId": {
-            "description": "Identifier the institution uses for this resource. Matches the `providerId` of the corresponding account, credit card, loan or investment.",
-            "type": "string"
-          },
-          "retrieved": {
-            "description": "Whether Pluggy currently holds a record for this resource. Records persist between executions, so this means the data is available now, not that the last execution fetched it.",
-            "type": "boolean"
           },
           "type": {
-            "description": "Open Finance resource type, as reported by the institution. `null` for an investment that the institution never declared, since a stored investment cannot be mapped back to one of the Open Finance investment types.",
+            "description": "Open Finance resource type.",
             "enum": [
               "ACCOUNT",
               "CREDIT_CARD_ACCOUNT",
@@ -4483,89 +4455,12 @@
               "CREDIT_FIXED_INCOME",
               "VARIABLE_INCOME",
               "TREASURE_TITLE",
-              "FUND",
-              null
+              "FUND"
             ],
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ItemResources": {
-        "properties": {
-          "collectedAt": {
-            "description": "When the institution's list was read. `null` when it was not obtained.",
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "connectorId": {
-            "description": "Connector of the item",
-            "type": "number"
-          },
-          "declaredListAvailable": {
-            "description": "Whether the institution's resources list was obtained on the last execution. When `false`, the rows below are built only from the data Pluggy holds and every one of them is `UNDECLARED`. Note this is different from the institution answering with an empty list, which returns `true` with no resources.",
-            "type": "boolean"
-          },
-          "isOpenFinance": {
-            "description": "Whether the item belongs to an Open Finance connector. `false` returns an empty inventory: only Open Finance institutions report a resources list.",
-            "type": "boolean"
-          },
-          "itemExecutionStatus": {
-            "description": "Execution status of the item's last update",
             "type": "string"
-          },
-          "itemId": {
-            "description": "Item the inventory belongs to",
-            "format": "uuid",
-            "type": "string"
-          },
-          "itemLastUpdatedAt": {
-            "description": "Last time the item finished updating, for comparison against `collectedAt`",
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "resources": {
-            "description": "One entry per declared resource, plus one per record held that the institution never declared. Anomalies are listed first.",
-            "items": {
-              "$ref": "#/components/schemas/ItemResource"
-            },
-            "type": "array"
-          },
-          "summary": {
-            "$ref": "#/components/schemas/ItemResourcesSummary"
           }
-        }
-      },
-      "ItemResourcesSummary": {
-        "properties": {
-          "blocked": {
-            "type": "number"
-          },
-          "missing": {
-            "type": "number"
-          },
-          "ok": {
-            "type": "number"
-          },
-          "total": {
-            "description": "Number of rows in `resources`",
-            "type": "number"
-          },
-          "undeclared": {
-            "type": "number"
-          },
-          "unexpected": {
-            "type": "number"
-          }
-        }
+        },
+        "type": "object"
       },
       "Loan": {
         "description": "Response with information related to a loan",
@@ -9821,7 +9716,7 @@
     },
     "/items/{id}/resources": {
       "get": {
-        "description": "Open Finance only. Lists every resource the financial institution declared for the consent, with the availability it reported, cross-checked against the data Pluggy actually holds for the item.\n\nUse it to tell apart the two situations behind \"a product has no data\": the institution reported the resource as unavailable or pending authorisation (expected, and something the end user can act on), versus the institution reported it as available but nothing came through (a collection problem).\n\nThe declared side is a snapshot taken during the last execution that reached the institution, so it can be older than the item itself \u2014 `collectedAt` says when it was taken. The retrieved side is read live on every request.",
+        "description": "Open Finance only. Lists the resources the financial institution declared for this item's consent, exactly as the institution reported them.\n\nUse it to answer what a consent actually covers, and what the institution says about each part of it. A resource reported as `PENDING_AUTHORISATION` or `UNAVAILABLE` explains an absent product, and is something the end user can act on at their bank.\n\nWhether Pluggy holds the matching record is a separate question: use the product endpoints (`/accounts`, `/investments`, `/loans`) and the Item's `statusDetail` for that.\n\nThe list is a snapshot from the last execution that reached the institution, so it can be older than the item itself. The Item's `resourcesCollectedAt` says when it was taken \u2014 and an empty list means the institution shared nothing only when that field is set; when it is `null`, the list was never obtained.\n\nItems on non Open Finance connectors return an empty page rather than an error.",
         "operationId": "items-resources",
         "parameters": [
           {
@@ -9833,6 +9728,26 @@
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "description": "Page size for the paging request, default: 500",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Page number for the paging request, default: 1",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -9840,11 +9755,35 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemResources"
+                  "properties": {
+                    "page": {
+                      "description": "",
+                      "format": "double",
+                      "type": "number"
+                    },
+                    "results": {
+                      "description": "List of declared resources",
+                      "items": {
+                        "$ref": "#/components/schemas/ItemResource"
+                      },
+                      "type": "array"
+                    },
+                    "total": {
+                      "description": "",
+                      "format": "double",
+                      "type": "number"
+                    },
+                    "totalPages": {
+                      "description": "",
+                      "format": "double",
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
                 }
               }
             },
-            "description": "The item resource inventory"
+            "description": "The resources declared for the item's consent"
           },
           "404": {
             "content": {
@@ -9872,7 +9811,7 @@
             "default": []
           }
         ],
-        "summary": "Retrieve Item resources",
+        "summary": "List Item resources",
         "tags": [
           "Items"
         ]
