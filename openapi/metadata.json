@@ -1,39 +1,24 @@
 {
   "source": "https://api.pluggy.ai/oas3.json",
-  "fetched_at": "2026-09-14T15:07:31.671129+00:00",
-  "source_sha256": "5bd0f17ac15831f1b7e29c411cfc267767e68e0dbb3c3e730a8e82eaffb7d791",
-  "snapshot_sha256": "2a54e8f84f17b8e26739799bb73f32bb8d5d0a98ec3ae4c0ec977b8c55aef422",
+  "fetched_at": "2026-09-21T01:22:37.926253+00:00",
+  "source_sha256": "8bdbdd9b78a1a92c5c241cefd9013b928cd3c64374300e6095da68ee1ee71f4d",
+  "snapshot_sha256": "1006cd261ee698086d0759386fdecab4cc558bb2a5206ee0b634b6a0fe72bb69",
   "sanitization_version": 1,
   "diff": {
-    "added": [
-      "GET /items/{id}/resources"
-    ],
+    "added": [],
     "removed": [],
     "changed": [
-      "GET /connectors",
-      "GET /connectors/{id}",
       "GET /items/{id}",
-      "GET /payments/customers",
-      "GET /payments/customers/{id}",
-      "GET /payments/intents",
-      "GET /payments/intents/{id}",
-      "GET /payments/requests",
-      "GET /payments/requests/{id}",
-      "GET /smart-transfers/preauthorizations",
-      "GET /smart-transfers/preauthorizations/{id}",
+      "GET /items/{id}/resources",
+      "GET /transactions",
+      "GET /transactions/{id}",
       "GET /v2/items",
+      "GET /v2/transactions",
       "PATCH /items/{id}",
       "PATCH /items/{id}/disable-auto-sync",
-      "PATCH /payments/customers/{id}",
-      "PATCH /payments/requests/{id}",
+      "PATCH /transactions/{id}",
       "POST /items",
-      "POST /items/{id}/mfa",
-      "POST /payments/customers",
-      "POST /payments/intents",
-      "POST /payments/requests",
-      "POST /payments/requests/automatic-pix",
-      "POST /payments/requests/pix-qr",
-      "POST /smart-transfers/preauthorizations"
+      "POST /items/{id}/mfa"
     ]
   }
 }
