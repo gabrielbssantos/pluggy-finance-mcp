@@ -109,25 +109,63 @@ async def test_timeout_is_in_progress(setup):
 
 
 @pytest.mark.parametrize(
-    "code",
+    "status,code,requires_user_action,retryable",
     [
-        "CLIENT_IS_UPDATING_BEFORE_ALLOWED_FREQUENCY",
-        "CONNECTOR_OFFLINE",
-        "SANDBOX_CLIENT_ITEM_UPDATE_NOT_ALLOWED",
-        "CLIENT_HAS_ITEM_UPDATES_DISABLED",
-        "LAST_EXECUTION_HAD_LOGIN_ERROR",
+        (400, "PARAMETERS_NOT_PROVIDED", True, False),
+        (409, "CONNECTOR_OFFLINE", False, True),
+        (400, "SANDBOX_CLIENT_ITEM_UPDATE_NOT_ALLOWED", True, False),
+        (409, "CLIENT_HAS_ITEM_UPDATES_DISABLED", True, False),
+        (400, "LAST_EXECUTION_HAD_LOGIN_ERROR", True, False),
+        (409, "ITEM_IN_ERROR_COOLDOWN", False, True),
     ],
 )
-async def test_explicit_errors_preserved(setup, code):
+async def test_explicit_errors_preserved(setup, status, code, requires_user_action, retryable):
     _, api, runtime = setup
     install(
         api,
         [item()],
-        httpx.Response(403, json={"code": code, "message": "PRIVATE", "frequency": 24}),
+        httpx.Response(
+            status,
+            json={
+                "code": status,
+                "codeDescription": code,
+                "message": "PRIVATE",
+                "data": {"private": "PRIVATE"},
+            },
+        ),
     )
     result = await runtime.invoke("sync_item", item_id=ITEM)
     assert result.data["error"]["code"] == code
+    assert result.data["error"]["retryable"] is retryable
+    assert result.data["requiresUserAction"] is requires_user_action
     assert result.data["lastUpdatedAt"]
+    assert sum(r.method == "PATCH" for r in api.requests) == 1
+    assert "PRIVATE" not in result.model_dump_json()
+
+
+async def test_update_frequency_details_and_next_allowed_time(setup):
+    _, api, runtime = setup
+    install(
+        api,
+        [item()],
+        httpx.Response(
+            409,
+            json={
+                "code": 409,
+                "codeDescription": "CLIENT_IS_UPDATING_BEFORE_ALLOWED_FREQUENCY",
+                "message": "PRIVATE",
+                "data": {"minUpdateFrequencyAllowedInHours": 24},
+            },
+        ),
+    )
+    result = await runtime.invoke("sync_item", item_id=ITEM)
+    assert result.data["error"] == {
+        "code": "CLIENT_IS_UPDATING_BEFORE_ALLOWED_FREQUENCY",
+        "retryable": True,
+        "message": "Aguarde a frequência mínima contratada.",
+        "httpStatus": 409,
+        "minimumUpdateIntervalHours": 24.0,
+    }
     assert result.data["nextAllowedUpdateAt"] == "2026-09-16T12:00:00+00:00"
     assert sum(r.method == "PATCH" for r in api.requests) == 1
     assert "PRIVATE" not in result.model_dump_json()
@@ -136,7 +174,11 @@ async def test_explicit_errors_preserved(setup, code):
 @pytest.mark.parametrize("code", ["ITEM_ALREADY_UPDATING", "ITEM_IS_ALREADY_UPDATING"])
 async def test_race_already_updating(setup, code):
     _, api, runtime = setup
-    install(api, [item(), item()], httpx.Response(409, json={"code": code}))
+    install(
+        api,
+        [item(), item()],
+        httpx.Response(400, json={"code": 400, "codeDescription": code}),
+    )
     result = await runtime.invoke("sync_item", item_id=ITEM)
     assert result.data["success"]
     assert sum(r.method == "PATCH" for r in api.requests) == 1
@@ -259,10 +301,12 @@ async def test_sync_logs_are_sanitized(setup, caplog):
         api,
         [item()],
         httpx.Response(
-            403,
+            409,
             json={
-                "code": "CLIENT_HAS_ITEM_UPDATES_DISABLED",
+                "code": 409,
+                "codeDescription": "CLIENT_HAS_ITEM_UPDATES_DISABLED",
                 "message": "PRIVATE_API_KEY synthetic-secret PRIVATE_PASSWORD",
+                "data": {"private": "PRIVATE_DATA"},
             },
         ),
     )
