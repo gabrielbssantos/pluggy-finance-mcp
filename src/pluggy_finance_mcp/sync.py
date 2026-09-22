@@ -10,16 +10,10 @@ from weakref import WeakValueDictionary
 
 from pluggy_finance_mcp.client.http import PluggyClient
 from pluggy_finance_mcp.client.responses import project
-from pluggy_finance_mcp.errors import FinanceError
+from pluggy_finance_mcp.errors import USER_ACTION_CODES, FinanceError
 from pluggy_finance_mcp.policy.readonly import resource_id
 
-ACTION = {
-    "INVALID_CREDENTIALS",
-    "LOGIN_ERROR",
-    "LAST_EXECUTION_HAD_LOGIN_ERROR",
-    "WAITING_USER_INPUT",
-    "CONNECTOR_REQUIRED_PARAMETER_VALIDATION_ERROR",
-}
+ACTION = USER_ACTION_CODES
 RUNNING = {
     "CREATED",
     "LOGIN_IN_PROGRESS",
@@ -166,7 +160,7 @@ class PluggySyncService:
                                     **item_view(item),
                                     "success": False,
                                     "inProgress": False,
-                                    "requiresUserAction": error.code in ACTION,
+                                    "requiresUserAction": error.requires_user_action,
                                     "error": error.public(),
                                 }
                                 frequency = error.details.get("minimumUpdateIntervalHours")

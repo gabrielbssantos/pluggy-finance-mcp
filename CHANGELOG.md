@@ -9,6 +9,7 @@
 - Migração: todas as tools agora exigem `item_id`; removido o Item global do ambiente.
 - Uma instância e autenticação em memória compartilhada; aliases pertencem à memória do Hermes.
 - Códigos de restrição de plano/frequência preservados, retries limitados e PATCH sem credenciais.
+- Erros da Pluggy agora preservam `codeDescription` reconhecido sem expor mensagens upstream.
 
 ## 0.1.0 — 2026-09-14
 
